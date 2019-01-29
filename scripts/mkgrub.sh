@@ -3,6 +3,7 @@
 # DISTRO directory overrides. Pass these vars in from outside:
 # export SYSLINUX_DIR=/usr/share/...;./mkgrub.sh
 [[ -z "$SYSLINUX_DIR" ]] && SYSLINUX_DIR="/usr/share/syslinux"
+[[ -z "$GRUB2_MOD_DIR" ]] && GRUB2_MOD_DIR="/usr/share/grub2"
 
 BOOTLOADERS_DIR="/var/lib/cobbler/loaders"
 TARGETS="arm64-efi i386-pc-pxe powerpc-ieee1275 x86_64-efi"
@@ -29,13 +30,31 @@ CD_MODULES="${CD_MODULES} linux"
 
 GRUB_MODULES="${CD_MODULES} ${FS_MODULES} ${PXE_MODULES} ${CRYPTO_MODULES} mdraid09 mdraid1x lvm serial regexp tr"
 
-mkdir -p "${BOOTLOADERS_DIR}/grub/"
+function link_loader
+{
+    local T="$1"
+    local L="$2"
+
+    if [[ -e "$T" ]] && [[ ! -e "${BOOTLOADERS_DIR}/$L" ]];then
+	set -x
+        ln -s "$T" "${BOOTLOADERS_DIR}/$L"
+	set +x
+	# Remember links for later deletion/cleanups
+        echo "$L" >> "${BOOTLOADERS_DIR}/.cobbler_postun_cleanup"
+    fi
+}
+
+
+mkdir -p "${BOOTLOADERS_DIR}/grub"
 for TARGET in $TARGETS;do
+    TARGET_MOD_DIR="$TARGET"
     case $TARGET in
 	i386-pc-pxe)
 	    PXE_MODULES="${PXE_MODULES} pxe biosdisk"
 	    BINARY="grub.0"
 	    CD_MODULES="${CD_MODULES} chain"
+	    # For i386-pc-pxe target the modules dir still is i386-pc
+	    TARGET_MOD_DIR="i386-pc"
 	    ;;
 	x86_64-efi)
 	    PXE_MODULES="${PXE_MODULES} efinet"
@@ -51,42 +70,25 @@ for TARGET in $TARGETS;do
 	    BINARY="grub.ppc64le"
 	    ;;
     esac
+    MODULE_DIR="${GRUB2_MOD_DIR}/${TARGET_MOD_DIR}"
     set -x
     grub2-mkimage -O ${TARGET} -o "${BOOTLOADERS_DIR}/grub/${BINARY}" --prefix= ${GRUB_MODULES}
     set +x
     echo "grub2/${BINARY}" >> "${BOOTLOADERS_DIR}/.cobbler_postun_cleanup"
+    if [[ -e "$MODULE_DIR" ]] && [[ ! -e "${BOOTLOADERS_DIR}/grub/$TARGET_MOD_DIR" ]];then
+	set -x
+        ln -s "$MODULE_DIR" "${BOOTLOADERS_DIR}/grub/$TARGET_MOD_DIR"
+	set +x
+        echo "$TARGET_MOD_DIR" >> "${BOOTLOADERS_DIR}/.cobbler_postun_cleanup"
+    fi
+
 done
 
-    # ToDo: Use shim_dir and grub_dir variables for other distros to pass them in
-    if [[ -e /usr/share/efi/x86_64/shim.efi ]] && [[ ! -e "${BOOTLOADERS_DIR}/grub/shim.efi" ]];then
-        ln -s /usr/share/efi/x86_64/shim.efi "${BOOTLOADERS_DIR}/grub/shim.efi"
-        echo "grub/shim.efi" >> "${BOOTLOADERS_DIR}/.cobbler_postun_cleanup"
-    fi
-    if [[ -e /usr/share/efi/grub.efi ]] && [[ ! -e "${BOOTLOADERS_DIR}/grub/grub.efi" ]];then
-	    ln -s /usr/share/efi/grub.efi "${BOOTLOADERS_DIR}/grub/grub.efi"
-	    echo "grub/grub.efi" >> "${BOOTLOADERS_DIR}/.cobbler_postun_cleanup"
-    fi
-    if [[ -e "$SYSLINUX_DIR"/pxelinux.0 ]] && [[ ! -e "${BOOTLOADERS_DIR}/pxelinux.0" ]];then
-        ln -s "$SYSLINUX_DIR"/pxelinux.0 "${BOOTLOADERS_DIR}/pxelinux.0"
-        echo "grub/${BINARY}" >> "${BOOTLOADERS_DIR}/.cobbler_postun_cleanup"
-    fi
-    if [[ -e "$SYSLINUX_DIR"/pxelinux.0 ]] && [[ ! -e "${BOOTLOADERS_DIR}/pxelinux.0" ]];then
-        ln -s "$SYSLINUX_DIR"/pxelinux.0 "${BOOTLOADERS_DIR}/pxelinux.0"
-        echo "pxelinux.0" >> "${BOOTLOADERS_DIR}/.cobbler_postun_cleanup"
-    fi
-    if [[ -e "$SYSLINUX_DIR"/menu.c32 ]] && [[ ! -e "${BOOTLOADERS_DIR}/menu.c32" ]];then
-        ln -s "$SYSLINUX_DIR"/menu.c32 "${BOOTLOADERS_DIR}/menu.c32"
-        echo "menu.c32" >> "${BOOTLOADERS_DIR}/.cobbler_postun_cleanup"
-    fi
-    if [[ -e "$SYSLINUX_DIR"/ldlinux.c32 ]] && [[ ! -e "${BOOTLOADERS_DIR}/ldlinux.c32" ]];then
-        ln -s "$SYSLINUX_DIR"/ldlinux.c32 "${BOOTLOADERS_DIR}/ldlinux.c32"
-        echo "ldlinux.c32" >> "${BOOTLOADERS_DIR}/.cobbler_postun_cleanup"
-    fi
-    if [[ -e "$SYSLINUX_DIR"/memdisk ]] && [[ ! -e "${BOOTLOADERS_DIR}/memdisk" ]];then
-        ln -s "$SYSLINUX_DIR"/memdisk "${BOOTLOADERS_DIR}/memdisk"
-        echo "memdisk" >> "${BOOTLOADERS_DIR}/.cobbler_postun_cleanup"
-    fi
-    if [[ -e "/usr/share/*pxe/undionly.kpxe" ]] && [[ ! -e "${BOOTLOADERS_DIR}/undionly.kpxe" ]];then
-        ln -s "/usr/share/*pxe/undionly.kpxe" "${BOOTLOADERS_DIR}/undionly.kpxe"
-        echo "undionly.kpxe" >> "${BOOTLOADERS_DIR}/.cobbler_postun_cleanup"
-    fi
+link_loader "/usr/share/efi/x86_64/shim.efi" "grub/shim.efi"
+link_loader "/usr/share/efi/x86_64/grub.efi" "grub/grub.efi"
+link_loader "${SYSLINUX_DIR}/pxelinux.0" "pxelinux.0"
+link_loader "${SYSLINUX_DIR}/menu.c32" "menu.c32"
+link_loader "${SYSLINUX_DIR}/ldlinux.c32" "ldlinux.c32"
+link_loader "$SYSLINUX_DIR}/memdisk" "memdisk"
+# ToDo: Do this properly if still used
+link_loader "/usr/share/*pxe/undionly.kpxe" "undionly.pxe"
