@@ -173,8 +173,6 @@ class TFTPGen(object):
                 if blended_system["boot_loader"] == "pxelinux":
                     # pxelinux wants a file named $name under pxelinux.cfg
                     f2 = os.path.join(self.bootloc, "pxelinux.cfg", f1)
-                elif distro.boot_loader == "grub2" or blended_system["boot_loader"] == "grub2":
-                    f2 = os.path.join(self.bootloc, "boot/grub", "grub.cfg-" + filename)
                 else:
                     f2 = os.path.join(self.bootloc, "etc", filename)
 
@@ -274,7 +272,7 @@ class TFTPGen(object):
         self.templar.render(template_data, metadata, outfile, None)
         template_src.close()
 
-        # Write the grub2 menu:
+        # Write the grub menu:
         metadata = {"grub_menu_items": menu_items['grub']}
         outfile = os.path.join(self.bootloc, "grub", "grub.cfg")
         template_src = open(os.path.join(self.settings.boot_loader_conf_template_dir, "grub.cfg.template"))
@@ -362,9 +360,9 @@ class TFTPGen(object):
         if system:
             if format == "grub":
                 if system.netboot_enabled:
-                    template = os.path.join(self.settings.boot_loader_conf_template_dir, "grub2system.template")
+                    template = os.path.join(self.settings.boot_loader_conf_template_dir, "grubsystem.template")
                 else:
-                    local = os.path.join(self.settings.boot_loader_conf_template_dir, "grub2local.template")
+                    local = os.path.join(self.settings.boot_loader_conf_template_dir, "grublocal.template")
                     if os.path.exists(local):
                         template = local
             else:   # pxe
@@ -376,8 +374,6 @@ class TFTPGen(object):
                         blended_system = utils.blender(self.api, False, system)
                         if blended_system["boot_loader"] == "pxelinux":
                             template = os.path.join(self.settings.boot_loader_conf_template_dir, "pxesystem_ppc.template")
-                        elif distro.boot_loader == "grub2" or blended_system["boot_loader"] == "grub2":
-                            template = os.path.join(self.settings.boot_loader_conf_template_dir, "grub2_ppc.template")
                         else:
                             template = os.path.join(self.settings.boot_loader_conf_template_dir, "yaboot_ppc.template")
                     elif arch.startswith("arm"):
@@ -400,11 +396,6 @@ class TFTPGen(object):
                             f3 = os.path.join(self.bootloc, "ppc", filename)
                             if os.path.lexists(f3):
                                 utils.rmfile(f3)
-
-                            # Remove the interface-specific config file
-                            f3 = os.path.join(self.bootloc, "boot/grub", "grub.cfg-" + filename)
-                            if os.path.lexists(f3):
-                                utils.rmfile(f3)
                             f3 = os.path.join(self.bootloc, "etc", filename)
                             if os.path.lexists(f3):
                                 utils.rmfile(f3)
@@ -419,7 +410,7 @@ class TFTPGen(object):
             if arch.startswith("arm"):
                 template = os.path.join(self.settings.boot_loader_conf_template_dir, "pxeprofile_arm.template")
             elif format == "grub":
-                template = os.path.join(self.settings.boot_loader_conf_template_dir, "grub2profile.template")
+                template = os.path.join(self.settings.boot_loader_conf_template_dir, "grubprofile.template")
             elif distro and distro.os_version.startswith("esxi"):
                 # ESXi uses a very different pxe method, see comment above in the system section
                 template = os.path.join(self.settings.boot_loader_conf_template_dir, "pxeprofile_esxi.template")

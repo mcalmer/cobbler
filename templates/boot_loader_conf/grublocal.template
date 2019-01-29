@@ -1,0 +1,25 @@
+with_gfx=0
+
+gfxmode=auto
+lang=en
+
+timeout=1
+default=1
+
+menuentry "Boot from Hard Disk" --class opensuse --class gnu-linux --class gnu --class os {
+  if search --no-floppy --file /efi/boot/fallback.efi --set ; then
+    if [ -f /efi/opensuse/shim.efi ] ; then
+      chainloader /efi/opensuse/grub.efi
+    elif [ -f /efi/sles/shim.efi ] ; then
+      chainloader /efi/sles/grub.efi
+    elif [ -f /EFI/redhat/grub.efi ]; then
+      chainloader /EFI/redhat/grub.efi
+    elif [ -f /EFI/redhat/grubx64.efi ]; then
+      chainloader /EFI/redhat/grubx64.efi
+    elif [ -f /EFI/centos/grub.efi ]; then
+      chainloader /EFI/centos/grub.efi
+    elif [ -f /EFI/centos/grubx64.efi ]; then
+      chainloader /EFI/centos/grubx64.efi
+    fi
+  fi
+}

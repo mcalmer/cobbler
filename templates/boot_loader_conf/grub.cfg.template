@@ -1,24 +1,80 @@
-set default="0"
-set timeout=20
+with_gfx=0
 
-function load_video {
-  insmod efi_gop
-  insmod efi_uga
-  insmod video_bochs
-  insmod video_cirrus
-  insmod all_video
-}
-load_video
-set gfxpayload=keep
-insmod net
-insmod efinet
-insmod tftp
-insmod gzio
-insmod part_gpt
-insmod ext2
+gfxmode=auto
+lang=en
 
-menuentry "(exit)" {
-  exit
+set timeout=80
+
+insmod gettext
+insmod tr
+
+color_normal=light-gray/black
+color_highlight=white/light-gray
+
+tr -s m1 ':' '-' $net_default_mac
+tr -s macstring -U $m1
+
+#-------------------------------------------------------------------------------
+# EFI support
+#
+# This is not nice and may produce error messages on the console.
+# grub2 should not offer linuxefi/initrdefi commands but instead handle this
+# internally.
+# But it does not and this allows us clean grub.cfg implementations without
+# the need of checking for efi/nonefi in possibly sourced subconfigfiles.
+#
+#-------------------------------------------------------------------------------
+if [ "$grub_platform" == "efi" ]; then
+    function linux {
+        linuxefi "$@"
+    }
+
+    function initrd {
+        initrdefi "$@"
+    }
+fi
+
+if [ -s "$prefix/grub.cfg-01-$macstring" ]; then
+  source "$prefix/grub.cfg-01-$macstring"
+else
+
+menuentry "Boot from Hard Disk" --class opensuse --class gnu-linux --class gnu --class os {
+  if [ "$grub_platform" == "efi" ]; then
+    if search --no-floppy --file /efi/boot/fallback.efi --set ; then
+      if [ -f /efi/opensuse/shim.efi ] ; then
+        chainloader /efi/opensuse/grub.efi
+      elif [ -f /efi/sles/shim.efi ] ; then
+        chainloader /efi/sles/grub.efi
+      elif [ -f /EFI/redhat/grub.efi ]; then
+        chainloader /EFI/redhat/grub.efi
+      elif [ -f /EFI/redhat/grubx64.efi ]; then
+        chainloader /EFI/redhat/grubx64.efi
+      elif [ -f /EFI/centos/grub.efi ]; then
+        chainloader /EFI/centos/grub.efi
+      elif [ -f /EFI/centos/grubx64.efi ]; then
+        chainloader /EFI/centos/grubx64.efi
+      fi
+    fi
+  elif [ "${grub_cpu}-${grub_platform}" == "i386-pc" ]; then
+    # grub.pxe: we do need to chainload here
+    set root=hd0
+    chainloader ($root)+1
+    boot
+  elif [ "${grub_cpu}-${grub_platform}" == "powerpc-ieee1275" ]; then
+    set btrfs_relative_path="y"
+    export btrfs_relative_path
+    echo "powerpc-ieee1275: search for local grub.cfg..."
+    for c in /boot/grub2/grub.cfg /boot/grub/grub.cfg; do
+       if search -s root -f "$c"; then
+          echo "powerpc-ieee1275: found ($root)$c"
+          configfile "$c"
+       fi
+   done
+fi
+exit
+
 }
 
 $grub_menu_items
+
+fi

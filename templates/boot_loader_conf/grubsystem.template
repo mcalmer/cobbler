@@ -1,0 +1,13 @@
+with_gfx=0
+
+gfxmode=auto
+lang=en
+
+timeout=1
+default=1
+
+menuentry 'linux' --class opensuse --class gnu-linux --class gnu --class os {
+  echo 'Loading kernel ...'
+  linux $kernel_path $kernel_options
+  echo 'Loading initial ramdisk ...'
+  initrd $initrd_path
