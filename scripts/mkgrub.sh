@@ -22,13 +22,12 @@ CD_MODULES=" all_video boot cat configfile echo true \
 		font gfxmenu gfxterm gzio halt iso9660 \
 		jpeg minicmd normal part_apple part_msdos part_gpt \
 		password_pbkdf2 png reboot search search_fs_uuid \
-		search_fs_file search_label sleep test video fat loadenv"
+		search_fs_file search_label sleep test video fat loadenv linux"
 PXE_MODULES="tftp http"
 CRYPTO_MODULES="luks gcry_rijndael gcry_sha1 gcry_sha256"
+MISC_MODULES="mdraid09 mdraid1x lvm serial regexp tr"
 
-CD_MODULES="${CD_MODULES} linux"
-
-GRUB_MODULES="${CD_MODULES} ${FS_MODULES} ${PXE_MODULES} ${CRYPTO_MODULES} mdraid09 mdraid1x lvm serial regexp tr"
+TARGET_EXTRA_MODULES=""
 
 function link_loader
 {
@@ -50,26 +49,27 @@ for TARGET in $TARGETS;do
     TARGET_MOD_DIR="$TARGET"
     case $TARGET in
 	i386-pc-pxe)
-	    PXE_MODULES="${PXE_MODULES} pxe biosdisk"
+	    # Name the x86 PXE executble with .0 in the end
+	    # pxelinux.0 only wants to chainload bootloaders ending with .0
 	    BINARY="grub.0"
-	    CD_MODULES="${CD_MODULES} chain"
+	    TARGET_EXTRA_MODULES="chain pxe biosdisk"
 	    # For i386-pc-pxe target the modules dir still is i386-pc
 	    TARGET_MOD_DIR="i386-pc"
 	    ;;
 	x86_64-efi)
-	    PXE_MODULES="${PXE_MODULES} efinet"
-	    BINARY="grub2-x86_64.efi"
-	    CD_MODULES="${CD_MODULES} chain"
+	    TARGET_EXTRA_MODULES="chain efinet"
+	    BINARY="grubx64.efi"
 	    ;;
 	arm64-efi)
-	    PXE_MODULES="${PXE_MODULES} efinet"
+	    TARGET_EXTRA_MODULES="efinet"
 	    BINARY="grubaa64.efi"
 	    ;;
 	powerpc-ieee1275)
-	    PXE_MODULES="${PXE_MODULES} net ofnet"
+	    TARGET_EXTRA_MODULES="net ofnet"
 	    BINARY="grub.ppc64le"
 	    ;;
     esac
+    GRUB_MODULES="${CD_MODULES} ${FS_MODULES} ${PXE_MODULES} ${CRYPTO_MODULES} ${MISC_MODULES} ${TARGET_EXTRA_MODULES}"
     MODULE_DIR="${GRUB2_MOD_DIR}/${TARGET_MOD_DIR}"
     set -x
     grub2-mkimage -O ${TARGET} -o "${BOOTLOADERS_DIR}/grub/${BINARY}" --prefix= ${GRUB_MODULES}
