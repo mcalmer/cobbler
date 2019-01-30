@@ -7,19 +7,51 @@ timeout=1
 default=1
 
 menuentry "Boot from Hard Disk" --class opensuse --class gnu-linux --class gnu --class os {
-  if search --no-floppy --file /efi/boot/fallback.efi --set ; then
-    if [ -f /efi/opensuse/shim.efi ] ; then
-      chainloader /efi/opensuse/grub.efi
-    elif [ -f /efi/sles/shim.efi ] ; then
-      chainloader /efi/sles/grub.efi
-    elif [ -f /EFI/redhat/grub.efi ]; then
-      chainloader /EFI/redhat/grub.efi
-    elif [ -f /EFI/redhat/grubx64.efi ]; then
-      chainloader /EFI/redhat/grubx64.efi
-    elif [ -f /EFI/centos/grub.efi ]; then
-      chainloader /EFI/centos/grub.efi
-    elif [ -f /EFI/centos/grubx64.efi ]; then
-      chainloader /EFI/centos/grubx64.efi
+  if [ "$grub_platform" == "efi" ]; then
+    if search --no-floppy --file /efi/boot/fallback.efi --set ; then
+      if [ -f /efi/opensuse/shim.efi ] ; then
+        chainloader /efi/opensuse/grub.efi
+      elif [ -f /efi/sles/shim.efi ] ; then
+        chainloader /efi/sles/grub.efi
+      elif [ -f /EFI/redhat/grub.efi ]; then
+        chainloader /EFI/redhat/grub.efi
+      elif [ -f /EFI/redhat/grubx64.efi ]; then
+        chainloader /EFI/redhat/grubx64.efi
+      elif [ -f /EFI/centos/grub.efi ]; then
+        chainloader /EFI/centos/grub.efi
+      elif [ -f /EFI/centos/grubx64.efi ]; then
+        chainloader /EFI/centos/grubx64.efi
+      fi
+    else
+      # ToDo: We have to know all possible local default grub.efi loaders
+      # for all distros, same for powerpc-ieee1275 below
+      search -s root -n -f /efi/boot/bootx64.efi
+      set prefix=(${root})/efi/opensuse
+      chainloader ${prefix}/grub.efi
+      boot # if it doesn't exist, go on
+      set prefix=(${root})/efi/sles
+      chainloader ${prefix}/grub.efi
+      boot # if it doesn't exist, go on
+      set prefix=(${root})/efi/grub
+      chainloader ${prefix}/grub.efi
+      chainloader ${prefix}/bootx64.efi
+      boot # if it doesn't exist, leave grub and enter shell
+      exit
     fi
-  fi
+  elif [ "${grub_cpu}-${grub_platform}" == "i386-pc" ]; then
+    # grub.pxe: we do need to chainload here
+    set root=hd0
+    chainloader ($root)+1
+    boot
+  elif [ "${grub_cpu}-${grub_platform}" == "powerpc-ieee1275" ]; then
+    set btrfs_relative_path="y"
+    export btrfs_relative_path
+    echo "powerpc-ieee1275: search for local grub.cfg..."
+    for c in /boot/grub2/grub.cfg /boot/grub/grub.cfg; do
+       if search -s root -f "$c"; then
+          echo "powerpc-ieee1275: found ($root)$c"
+          configfile "$c"
+       fi
+   done
+fi
 }
