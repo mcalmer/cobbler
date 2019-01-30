@@ -5,12 +5,6 @@ lang=en
 
 set timeout=80
 
-insmod gettext
-insmod tr
-
-color_normal=light-gray/black
-color_highlight=white/light-gray
-
 tr -s m1 ':' '-' $net_default_mac
 tr -s macstring -U $m1
 
@@ -54,6 +48,21 @@ menuentry "Boot from Hard Disk" --class opensuse --class gnu-linux --class gnu -
       elif [ -f /EFI/centos/grubx64.efi ]; then
         chainloader /EFI/centos/grubx64.efi
       fi
+    else
+      # ToDo: We have to know all possible local default grub.efi loaders
+      # for all distros, same for powerpc-ieee1275 below
+      search -s root -n -f /efi/boot/bootx64.efi
+      set prefix=(${root})/efi/opensuse
+      chainloader ${prefix}/grub.efi
+      boot # if it doesn't exist, go on
+      set prefix=(${root})/efi/sles
+      chainloader ${prefix}/grub.efi
+      boot # if it doesn't exist, go on
+      set prefix=(${root})/efi/grub
+      chainloader ${prefix}/grub.efi
+      chainloader ${prefix}/bootx64.efi
+      boot # if it doesn't exist, leave grub and enter shell
+      exit
     fi
   elif [ "${grub_cpu}-${grub_platform}" == "i386-pc" ]; then
     # grub.pxe: we do need to chainload here
@@ -71,8 +80,6 @@ menuentry "Boot from Hard Disk" --class opensuse --class gnu-linux --class gnu -
        fi
    done
 fi
-exit
-
 }
 
 $grub_menu_items
