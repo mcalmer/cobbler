@@ -22,7 +22,6 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
 """
 
 from builtins import object
-from distutils import dir_util
 import os
 import os.path
 import re
@@ -62,7 +61,11 @@ class TFTPGen(object):
         /etc/cobbler/settings.
         """
         src = self.settings.bootloaders_dir
-        dir_util.copy_tree(src, utils.tftpboot_location())
+        dest = dest=utils.tftpboot_location()
+        #ToDo: Use shutils.copy_tree or something selfwritten
+        # unfortunately using shutils copy_tree the dest directory must not exist,
+        # but we must not delete an already partly synced /srv/tftp dir here.
+        utils.subprocess_call(self.logger, "cp -rp {src} {dest}".format(src=src, dest=dest, shell=False))
 
     def copy_images(self):
         """
