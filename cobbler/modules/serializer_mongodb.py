@@ -22,10 +22,9 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
 02110-1301  USA
 """
 
-from past.builtins import cmp
-from future import standard_library
-standard_library.install_aliases()
 from configparser import ConfigParser
+import yaml
+from cobbler.cexceptions import CX
 
 pymongo_loaded = False
 try:
@@ -34,10 +33,6 @@ try:
 except:
     # FIXME: log message
     pass
-
-import yaml
-
-from cobbler.cexceptions import CX
 
 cp = ConfigParser()
 cp.read("/etc/cobbler/mongodb.conf")
@@ -143,16 +138,10 @@ def deserialize(collection, topological=True):
 
     datastruct = deserialize_raw(collection.collection_type())
     if topological and type(datastruct) == list:
-        datastruct.sort(__depth_cmp)
+        datastruct = sorted(datastruct)
     if type(datastruct) == dict:
         collection.from_dict(datastruct)
     elif type(datastruct) == list:
         collection.from_list(datastruct)
-
-
-def __depth_cmp(item1, item2):
-    d1 = item1.get("depth", 1)
-    d2 = item2.get("depth", 1)
-    return cmp(d1, d2)
 
 # EOF

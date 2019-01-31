@@ -35,14 +35,9 @@ TODO
     Feature:     support utimeout (timeout, in ms)
 
 """
-
-
-from future import standard_library
-standard_library.install_aliases()
 from builtins import str
 from builtins import range
 from builtins import object
-VERSION = 0.5
 
 import sys
 import os
@@ -68,6 +63,8 @@ import Cheetah      # need exception types
 
 from struct import pack, unpack
 from subprocess import Popen, PIPE, STDOUT
+
+VERSION = 0.5
 
 # Data/Defines
 TFTP_OPCODE_RRQ = 1

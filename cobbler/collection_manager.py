@@ -20,7 +20,6 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
 02110-1301  USA
 """
 
-from past.builtins import cmp
 from builtins import object
 import time
 import weakref
@@ -77,9 +76,6 @@ class CollectionManager(object):
         aka primary key
         """
         return uuid.uuid4().hex
-
-    def __cmp(self, a, b):
-        return cmp(a.name, b.name)
 
     def distros(self):
         """

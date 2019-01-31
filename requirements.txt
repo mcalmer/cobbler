@@ -1,6 +1,5 @@
 mod_wsgi
 requests
-future
 pyyaml
 simplejson
 netaddr

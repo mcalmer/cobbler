@@ -20,14 +20,10 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
 02110-1301  USA
 """
 
-from past.builtins import cmp
-from future import standard_library
-from functools import reduce
-standard_library.install_aliases()
 from builtins import map
 from builtins import str
-from past.utils import old_div
 from builtins import object
+from functools import reduce
 import copy
 import errno
 import glob
@@ -174,7 +170,7 @@ def get_host_ip(ip, shorten=True):
             # not enough to make the last nibble insignificant
             return pretty
         else:
-            cutoff = old_div((32 - cidr.prefixlen), 4)
+            cutoff = (32 - cidr.prefixlen) / 4
             return pretty[0:-cutoff]
 
 
@@ -288,6 +284,18 @@ def find_matching_files(directory, regex):
         if regex.match(os.path.basename(f)):
             results.append(f)
     return results
+
+
+def cmp(x, y):
+    """
+    Replacement for built-in function cmp that was removed in Python 3
+
+    Compare the two objects x and y and return an integer according to
+    the outcome. The return value is negative if x < y, zero if x == y
+    and strictly positive if x > y.
+    """
+
+    return (x > y) - (x < y)
 
 
 def find_highest_files(directory, unversioned, regex):

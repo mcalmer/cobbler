@@ -18,9 +18,6 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
 02110-1301  USA
 """
 
-from past.builtins import cmp
-from future import standard_library
-standard_library.install_aliases()
 from builtins import str
 from builtins import object
 from configparser import ConfigParser
@@ -246,9 +243,6 @@ class CobblerAPI(object):
             return data
 
     # ==========================================================
-
-    def __cmp(self, a, b):
-        return cmp(a.name, b.name)
 
     def get_item(self, what, name):
         self.log("get_item", [what, name], debug=True)
