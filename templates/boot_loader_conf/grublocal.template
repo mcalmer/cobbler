@@ -3,46 +3,8 @@ with_gfx=0
 gfxmode=auto
 lang=en
 
-set timeout=80
-
-tr -s m1 ':' '-' $net_default_mac
-tr -s macstring -U $m1
-
-#-------------------------------------------------------------------------------
-# EFI support (in fact shim support!)
-#
-# grub2 should not offer linuxefi/initrdefi commands but instead handle this
-# internally.
-# But it does not and this allows us clean grub.cfg implementations without
-# the need of checking for efi/nonefi in possibly sourced subconfigfiles.
-#
-# From our grub expert (Raymund Will): linuxefi/initrdefi is for shim
-# support/protocol only.
-# A possible enhancement here would be, if we can differ secure_boot_enabled.
-# grubXY.efi can load kernels via linux or linuxefi, it is only shim
-# case where this has to be differed.
-#
-#-------------------------------------------------------------------------------
-function clinux {
-    if [ "$grub_platform" == "efi" ]; then
-        linuxefi "$@"
-    else
-	linux "$@"
-    fi
-}
-function cinitrd {
-    if [ "$grub_platform" == "efi" ]; then
-        initrdefi "$@"
-    else
-	initrd "$@"
-    fi
-}
-
-
-
-if [ -s "$prefix/grub.cfg-01-$macstring" ]; then
-  source "$prefix/grub.cfg-01-$macstring"
-else
+timeout=1
+default=1
 
 menuentry "Boot from Hard Disk" --class opensuse --class gnu-linux --class gnu --class os {
   if [ "$grub_platform" == "efi" ]; then
@@ -93,7 +55,3 @@ menuentry "Boot from Hard Disk" --class opensuse --class gnu-linux --class gnu -
    done
 fi
 }
-
-$grub_menu_items
-
-fi
