@@ -65,7 +65,7 @@ class TFTPGen(object):
         #ToDo: Use shutils.copy_tree or something selfwritten
         # unfortunately using shutils copy_tree the dest directory must not exist,
         # but we must not delete an already partly synced /srv/tftp dir here.
-        utils.subprocess_call(self.logger, "cp -rp {src} {dest}".format(src=src, dest=dest, shell=False))
+        utils.subprocess_call(self.logger, "cp -rp {src}/* {dest}".format(src=src, dest=dest, shell=False))
 
     def copy_images(self):
         """
