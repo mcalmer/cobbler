@@ -5,8 +5,12 @@ lang=en
 
 set timeout=80
 
-tr -s m1 ':' '-' $net_default_mac
-tr -s macstring -U $m1
+#-------------------------------------------------------------------------------
+# MAC address
+#-------------------------------------------------------------------------------
+set mac=${net_default_mac}
+
+export mac
 
 #-------------------------------------------------------------------------------
 # EFI support (in fact shim support!)
@@ -40,8 +44,8 @@ function cinitrd {
 
 
 
-if [ -s "$prefix/grub.cfg-01-$macstring" ]; then
-  source "$prefix/grub.cfg-01-$macstring"
+if [ -s "$prefix/$mac" ]; then
+  source "$prefix/$mac"
 else
 
 menuentry "Boot from Hard Disk" --class opensuse --class gnu-linux --class gnu --class os {

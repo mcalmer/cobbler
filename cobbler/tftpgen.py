@@ -146,8 +146,16 @@ class TFTPGen(object):
         # generate one record for each described NIC ..
         for (name, interface) in list(system.interfaces.items()):
 
-            f1 = system.get_config_filename(interface=name)
-            if f1 is None:
+            pxe_name = system.get_config_filename(interface=name)
+            grub_name = system.get_config_filename(interface=name, loader="grub")
+
+            if pxe_name is not None:
+                pxe_path = os.path.join(self.bootloc, "pxelinux.cfg", pxe_name)
+
+            if grub_name is not None:
+                grub_path = os.path.join(self.bootloc, "grub", grub_name)
+
+            if grub_path is None and pxe_path is None:
                 self.logger.warning("invalid interface recorded for system (%s,%s)" % (system.name, name))
                 continue
 
@@ -160,13 +168,9 @@ class TFTPGen(object):
                 raise CX("internal error, invalid arch supplied")
 
             # for tftp only ...
-            grub_path = None
-            if working_arch in ["i386", "x86", "x86_64", "arm", "standard"]:
-                # pxelinux wants a file named $name under pxelinux.cfg
-                f2 = os.path.join(self.bootloc, "pxelinux.cfg", f1)
-
-                # Only generating grub menus for these arch's:
-                grub_path = os.path.join(self.bootloc, "grub", f1.lower())
+            if working_arch in ["i386", "x86", "x86_64", "arm", "armv7", "ppc64le", "ppc64el", "standard"]:
+                # ToDo: This is old, move this logic into item_system.get_config_filename()
+                pass
 
             elif working_arch.startswith("ppc"):
                 # Determine filename for system-specific bootloader config
@@ -174,11 +178,9 @@ class TFTPGen(object):
                 # to inherit the distro and system's boot_loader values correctly
                 blended_system = utils.blender(self.api, False, system)
                 if blended_system["boot_loader"] == "pxelinux":
-                    # pxelinux wants a file named $name under pxelinux.cfg
-                    f2 = os.path.join(self.bootloc, "pxelinux.cfg", f1)
+                    pass
                 else:
-                    f2 = os.path.join(self.bootloc, "etc", filename)
-
+                    pxe_path = os.path.join(self.bootloc, "etc", filename)
                     # Link to the yaboot binary
                     f3 = os.path.join(self.bootloc, "ppc", filename)
                     if os.path.lexists(f3):
@@ -189,14 +191,15 @@ class TFTPGen(object):
 
             if system.is_management_supported():
                 if not image_based:
-                    self.write_pxe_file(f2, system, profile, distro, working_arch, metadata=pxe_metadata)
+                    if pxe_path:
+                        self.write_pxe_file(pxe_path, system, profile, distro, working_arch, metadata=pxe_metadata)
                     if grub_path:
                         self.write_pxe_file(grub_path, system, profile, distro, working_arch, format="grub")
                 else:
-                    self.write_pxe_file(f2, system, None, None, working_arch, image=profile, metadata=pxe_metadata)
+                    self.write_pxe_file(pxe_path, system, None, None, working_arch, image=profile, metadata=pxe_metadata)
             else:
                 # ensure the file doesn't exist
-                utils.rmfile(f2)
+                utils.rmfile(pxe_path)
                 if grub_path:
                     utils.rmfile(grub_path)
 
