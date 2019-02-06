@@ -472,7 +472,7 @@ class TFTPGen(object):
                 if format == "pxe":
                     metadata["serial"] = "serial %d %d\n" % (serial_device, serial_baud_rate)
                 elif format == "grub":
-                    metadata["serial"] = "serial --unit=%d --speed=%d --word=8 --parity=no --stop=1\n" % (serial_device, serial_baud_rate)
+                    metadata["serial"] = "set serial_console=true\nset serial_baud={baud}\nset serial_line={device}\n".format (baud=serial_baud_rate, device=serial_device)
 
         # get the template
         if kernel_path is not None:

@@ -1,12 +1,7 @@
-with_gfx=0
-
-gfxmode=auto
-lang=en
-
 timeout=1
 default=1
 
-menuentry "Boot from Hard Disk" --class opensuse --class gnu-linux --class gnu --class os {
+menuentry "hard disk" --class opensuse --class gnu-linux --class gnu --class os {
   if [ "$grub_platform" == "efi" ]; then
     if search --no-floppy --file /efi/boot/fallback.efi --set ; then
       if [ -f /efi/opensuse/shim.efi ] ; then

@@ -1,3 +1,5 @@
+
+
 menuentry '$profile_name' --class opensuse --class gnu-linux --class gnu --class os {
   echo 'Loading kernel ...'
   clinux $kernel_path $kernel_options

@@ -1,16 +1,69 @@
-with_gfx=0
-
-gfxmode=auto
-lang=en
-
+#-------------------------------------------------------------------------------
+# Set defaults (is re-set by machine specific configuration file)
+#-------------------------------------------------------------------------------
+set arch='x86_64'
+set hostname='dummy'
+set graphic_console=false
+set lang=en
+set serial_console=false
+set serial_baud=115200
+set serial_line=0
+set kernel_options=""
 set timeout=80
+set default='hard disk'
+
+# preset architecture, so it will never be empty
+if [ "$grub_cpu" == "i386" ]; then
+    set arch='x86_64'
+elif [ "$grub_cpu" == "x86_64" ]; then
+    set arch='x86_64'
+elif [ "$grub_cpu" == "powerpc" ]; then
+    set arch='ppc64le'
+elif [ "$grub_cpu" == "arm64" ]; then
+    # Untested
+    set arch='aarch64'
+else
+    set arch='unknown'
+fi
 
 #-------------------------------------------------------------------------------
 # MAC address
 #-------------------------------------------------------------------------------
 set mac=${net_default_mac}
-
 export mac
+
+if [ -s "$prefix/$mac" ]; then
+  # Load machine configs and menu
+  source "$prefix/$mac"
+  # ToDo: Tell cobblerd that we got machine specific config file
+fi
+
+
+#-------------------------------------------------------------------------------
+# Serial console
+#-------------------------------------------------------------------------------
+if [ $serial_console == true -a "$grub_platform" != "efi" ]; then
+    # Do not fiddle with console on EFI, this should already be set
+    #echo "serial"; sleep 3
+    serial --speed=$serial_baud --unit=$serial_line --word=8 --parity=no --stop=1
+    terminal_input --append serial
+    terminal_output --append serial
+else
+    #echo "console"; sleep 3
+    terminal_input console
+    terminal_output console
+fi
+
+#-------------------------------------------------------------------------------
+# Graphical console
+#-------------------------------------------------------------------------------
+if [ "$graphic_console" == "yes" ]; then
+   with_gfx=1
+elif [ "$graphic_console" == "no" ]; then
+   with_gfx=0
+else
+   gfxmode=auto
+fi
 
 #-------------------------------------------------------------------------------
 # EFI support (in fact shim support!)
@@ -42,13 +95,7 @@ function cinitrd {
     fi
 }
 
-
-
-if [ -s "$prefix/$mac" ]; then
-  source "$prefix/$mac"
-else
-
-menuentry "Boot from Hard Disk" --class opensuse --class gnu-linux --class gnu --class os {
+menuentry "hard disk" --class opensuse --class gnu-linux --class gnu --class os {
   if [ "$grub_platform" == "efi" ]; then
     if search --no-floppy --file /efi/boot/fallback.efi --set ; then
       if [ -f /efi/opensuse/shim.efi ] ; then
